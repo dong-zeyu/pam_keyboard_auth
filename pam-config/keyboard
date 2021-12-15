@@ -1,0 +1,6 @@
+Name: Keyboard Authentication
+Default: no
+Priority: 259
+Auth-Type: Primary
+Auth:
+	[success=end default=ignore]	pam_keyboard.so
