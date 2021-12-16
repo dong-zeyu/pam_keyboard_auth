@@ -29,7 +29,10 @@ void print_pam_message(pam_handle_t *pamh, int msg_style, const char *message, v
         return; // No conversation function available
     }
 
-    ssize_t size = vsnprintf(NULL, 0, message, args);
+    va_list args_copy;
+    va_copy(args_copy, args);
+    ssize_t size = vsnprintf(NULL, 0, message, args_copy);
+    va_end(args_copy);
     char *buffer = malloc(size + 1);
     vsnprintf(buffer, size + 1, message, args);
 
