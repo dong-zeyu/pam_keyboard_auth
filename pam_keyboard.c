@@ -16,19 +16,20 @@
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/file.h>
+#include <sys/wait.h>
 #include <systemd/sd-login.h>
 #include <termios.h>
 #include <unistd.h>
 
 #define MAX_EVENTS 64
 #define MAX_RETRIES 3
+#define EXT_PROG "/usr/local/bin/go-face-unlock"
 
 void print_pam_message(pam_handle_t *pamh, int msg_style, const char *message, va_list args) {
     struct pam_conv *conv = 0;
     if(pam_get_item(pamh, PAM_CONV, (const void **) &conv) != PAM_SUCCESS || conv == NULL || conv->conv == NULL) {
         return; // No conversation function available
     }
-
     va_list args_copy;
     va_copy(args_copy, args);
     ssize_t size = vsnprintf(NULL, 0, message, args_copy);
@@ -192,7 +193,19 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **ar
                     trial++;
                     if (ev.code == KEY_PAUSE || ev.code == KEY_DELETE) {  // Success if PAUSE/DELETE key is pressed
                         trial--;
-                        ret = PAM_SUCCESS;
+                        int pid = vfork();
+                        if (pid == 0) {
+                            char *args[] = {"unlock", NULL};
+                            execvp(EXT_PROG, args);
+                        } else {
+                            int status;
+                            waitpid(pid, &status, 0);
+                            if (WIFSIGNALED(status) == 0 && WEXITSTATUS(status) == 0) {
+                                ret = PAM_SUCCESS;
+                            } else {
+                                print_error(pamh, "Face not recognized");
+                            }
+                        }
                         goto end3;
                     } else if (ev.code == KEY_ESC) {  // Cancel if ESC is pressed
                         goto end3;
