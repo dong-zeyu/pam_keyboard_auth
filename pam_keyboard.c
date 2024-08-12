@@ -162,7 +162,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **ar
     int trial = 0;
     sigset_t signals;
     sigemptyset(&signals);
-    print_info(pamh, "Press PAUSE key to continue...");
+    print_info(pamh, "Press PAUSE/DELETE key to continue...");
     while (true) {
         if (trial >= MAX_RETRIES) {
             print_error(pamh, "too many trials");
@@ -190,7 +190,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **ar
 
                 if (ev.type == EV_KEY && ev.value == 1) {  // key pressed
                     trial++;
-                    if (ev.code == KEY_PAUSE) {  // Success if PAUSE key is pressed
+                    if (ev.code == KEY_PAUSE || ev.code == KEY_DELETE) {  // Success if PAUSE/DELETE key is pressed
                         trial--;
                         ret = PAM_SUCCESS;
                         goto end3;
